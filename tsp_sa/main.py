@@ -9,7 +9,7 @@ class point(object):
         self.y = y
 
 class TSPSA:
-    def __init__(self, filename, params = {}):
+    def __init__(self, filename, db, params = {}):
         self.params = params
         self.filename = filename
         self.euclidian_matrix = []
@@ -17,19 +17,29 @@ class TSPSA:
         self.solution_cords = []
         self.data = []
         self.fixed_points = []
+        self.db = db
     
     def defineFixedPoints(self):
+        print(len(self.data))
         for i in self.data:
             self.fixed_points.append((i[1], i[2]))
 
     def drawFixedPoints(self, screen):
         for p in range(len(self.fixed_points)):
-            x = int(self.fixed_points[p][0]) * 15.5
-            y = int(self.fixed_points[p][1]) * 12.8
+            if self.db == 'base51':
+                x = int(self.fixed_points[p][0]) * 15.5
+                y = int(self.fixed_points[p][1]) * 13
+            else:
+                x = int(self.fixed_points[p][0]) / 2.65
+                y = int(self.fixed_points[p][1]) / 2.08
+
             pygame.draw.circle(surface = screen, color = (0,0,0), center = (x, y), radius = 10)
 
     def drawSolutionLines(self, screen):
-        pygame.draw.lines(screen, (0,0,255), False, [(x[0]*15.5, x[1]*12.8) for x in self.solution_cords], width=2) 
+        if self.db == 'base51':
+            pygame.draw.lines(screen, (0,0,255), False, [(x[0] * 15.5, x[1] * 13) for x in self.solution_cords], width=2) 
+        else:
+            pygame.draw.lines(screen, (0,0,255), False, [(x[0] / 2.65, x[1] / 2.08) for x in self.solution_cords], width=2) 
         pygame.display.flip()
 
     def defineSolutionCords(self):
@@ -38,6 +48,8 @@ class TSPSA:
                 if int(j[0]) == i:
                     self.solution_cords.append((int(j[1]), int(j[2])))
         self.solution_cords.append(self.solution_cords[0])
+
+        print("Solution Cords:", self.solution_cords)
 
     def loadInstance(self):
         print("Carregando base de dados...")
@@ -66,7 +78,6 @@ class TSPSA:
                 if (i >= j):
                     self.euclidian_matrix[first_index][second_index] = self.euclidianDistance(first_point, second_point)
         print("Matriz de distâncias calculada!")
-        # self.debugEuclidianMatrix()
     
     def debugEuclidianMatrix(self):
         for i in range(len(self.data)):
@@ -76,13 +87,11 @@ class TSPSA:
 
     def generateInitialSolution(self):
         print("Gerando primeira solução válida aleatóriamente...")
-        self.first_solution = random.sample(range(0,51), 51)
+        self.first_solution = random.sample(range(0,len(self.data)), len(self.data))
         print("Primeira solução válida gerada!")
-        # print(self.first_solution)
+        print("Primeira solução:", self.first_solution)
 
     def getDistanceByCityIndex(self, city_A, city_B):
-        # print(city_A, city_B)
-        # print(f"PESO ENTRE {city_A} e {city_B} eh {self.euclidian_matrix[city_A][city_B]}")
         return self.euclidian_matrix[city_A][city_B] if city_A > city_B else self.euclidian_matrix[city_B][city_A]
 
     def calculateCostFirstSolution(self):
@@ -110,17 +119,22 @@ class TSPSA:
         pass
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode((1024, 1024))
-    screen.fill((255,255,255))
+
+    # PARAMETROS PARA MUDAR ENTRE AS BASES: TAMANHO DA TELA DO PYGAME E MULTIPLICAÇÃO/DIVISÃO DOS VALORES NA FUNÇÃO drawFixedPoints
 
     if len(sys.argv) == 1:
         print("Error! Missing params (base)")
         exit()
+    
+    resolution = [1024, 1024] if sys.argv[1] == 'base51' else [1500, 1024]
+
+    pygame.init()
+    screen = pygame.display.set_mode((resolution[0], resolution[1]))
+    screen.fill((255,255,255))
 
     filename = "bases/"+sys.argv[1]+".txt"
 
-    objtsp = TSPSA(filename)
+    objtsp = TSPSA(filename, sys.argv[1])
     objtsp.loadInstance()
     objtsp.initializeMatrix()
     objtsp.calculateMatrix()
