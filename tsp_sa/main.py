@@ -1,37 +1,47 @@
 import sys
 import math
 import random
+import pygame
 
 class point(object):
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
-def main():
-    if len(sys.argv) == 1:
-        print("Error! Missing params (base)")
-        exit()
-
-    filename = "bases/"+sys.argv[1]+".txt"
-
-    objtsp = TSPSA(filename)
-    objtsp.loadInstance()
-    objtsp.initializeMatrix()
-    objtsp.calculateMatrix()
-    objtsp.generateInitialSolution()
-    objtsp.calculateCostFirstSolution()
-
 class TSPSA:
     def __init__(self, filename, params = {}):
-        self.params = params,
-        self.filename = filename,
-        self.euclidian_matrix = [],
-        self.first_solution = [],
+        self.params = params
+        self.filename = filename
+        self.euclidian_matrix = []
+        self.first_solution = []
+        self.solution_cords = []
         self.data = []
+        self.fixed_points = []
     
+    def defineFixedPoints(self):
+        for i in self.data:
+            self.fixed_points.append((i[1], i[2]))
+
+    def drawFixedPoints(self, screen):
+        for p in range(len(self.fixed_points)):
+            x = int(self.fixed_points[p][0]) * 15.5
+            y = int(self.fixed_points[p][1]) * 12.8
+            pygame.draw.circle(surface = screen, color = (0,0,0), center = (x, y), radius = 10)
+
+    def drawSolutionLines(self, screen):
+        pygame.draw.lines(screen, (0,0,255), False, [(x[0]*15.5, x[1]*12.8) for x in self.solution_cords], width=2) 
+        pygame.display.flip()
+
+    def defineSolutionCords(self):
+        for i in self.first_solution:
+            for j in self.data:
+                if int(j[0]) == i:
+                    self.solution_cords.append((int(j[1]), int(j[2])))
+        self.solution_cords.append(self.solution_cords[0])
+
     def loadInstance(self):
         print("Carregando base de dados...")
-        file = open(self.filename[0], 'r')
+        file = open(self.filename, 'r')
         for line in file:
             lineSplited = line.split(" ")
             self.data.append((lineSplited[0],lineSplited[1],lineSplited[2].rstrip()))
@@ -68,7 +78,7 @@ class TSPSA:
         print("Gerando primeira solução válida aleatóriamente...")
         self.first_solution = random.sample(range(0,51), 51)
         print("Primeira solução válida gerada!")
-        print(self.first_solution )
+        # print(self.first_solution)
 
     def getDistanceByCityIndex(self, city_A, city_B):
         # print(city_A, city_B)
@@ -98,5 +108,31 @@ class TSPSA:
 
     def simulatedAnnealing():
         pass
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((1024, 1024))
+    screen.fill((255,255,255))
+
+    if len(sys.argv) == 1:
+        print("Error! Missing params (base)")
+        exit()
+
+    filename = "bases/"+sys.argv[1]+".txt"
+
+    objtsp = TSPSA(filename)
+    objtsp.loadInstance()
+    objtsp.initializeMatrix()
+    objtsp.calculateMatrix()
+    objtsp.generateInitialSolution()
+    objtsp.calculateCostFirstSolution()
+    objtsp.defineFixedPoints()
+    objtsp.defineSolutionCords()
+    objtsp.drawFixedPoints(screen)
+    objtsp.drawSolutionLines(screen)
+
+    while True:
+        pass
+
 
 main()
