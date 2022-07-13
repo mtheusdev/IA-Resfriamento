@@ -2,6 +2,8 @@ import sys
 import math
 import random
 import pygame
+import matplotlib.pyplot as plt
+from numpy import log as ln
 
 class point(object):
     def __init__(self, x, y):
@@ -17,7 +19,10 @@ class TSPSA:
         self.solution_s = []
         self.solution_s_line = []
         self.solution_cords = []
+        self.best_cost_graphic_array = []
         self.data = []
+        self.iteration_graphic_array = []
+        self.temperature_graphic_array = []
         self.lenData = 0
         self.fixed_points = []
         self.db = db
@@ -25,12 +30,15 @@ class TSPSA:
         self.cost_s = 0
         self.cost_s_line = 0
         self.screen = screen
+        self.temperature = []
+        self.iteration = []
         self.thermal_equilibrium = params[1]
         self.T0 = params[2] # Temperatura inicial
         self.Ti = params[2] # Temperatura na iteração
         self.N = params[0]  # Número máximo de iterações
         self.Tn = 0.1       # Temperatura Final
         self.I = 0          # Número da iteração
+        self.current_formula = ''
     
     def defineFixedPoints(self):
         # print(len(self.data))
@@ -165,20 +173,66 @@ class TSPSA:
         self.drawSolutionLines()
         pygame.display.flip()
 
+    def plotGraphicTempByItr(self):
+        plt.plot(self.iteration_graphic_array, self.temperature_graphic_array)
+        plt.title("Temperatura por Iteração - " + self.current_formula)
+        plt.xlabel('Iterações')
+        plt.ylabel('Temperatura')
+        plt.savefig("temp_by_itr_"+str(round(self.best_cost))+"_"+self.current_formula+"_"+str(self.N)+"_"+str(self.T0)+'.png')
+        plt.figure().clear()
+
+    def plotGraphicCostByItr(self):
+        plt.plot(self.iteration_graphic_array, self.best_cost_graphic_array)
+        plt.title("Custo por Iteração- " + self.current_formula)
+        plt.xlabel('Iterações')
+        plt.ylabel('Custo')
+        plt.savefig("cost_by_itr_"+str(round(self.best_cost))+"_"+self.current_formula+"_"+str(self.N)+"_"+str(self.T0)+'.png')
+        plt.figure().clear()
+
+    def plotGraphicCostByTemp(self):
+        self.best_cost_graphic_array = list(reversed(self.best_cost_graphic_array))
+        plt.plot(self.best_cost_graphic_array,self.temperature_graphic_array)
+        plt.title("Temperatura pelo Custo - " + self.current_formula)
+        plt.xlabel('Custo')
+        plt.ylabel('Temperatura')
+        plt.savefig("temp_by_cost_"+str(round(self.best_cost))+"_"+self.current_formula+"_"+str(self.N)+"_"+str(self.T0)+'.png')
+        plt.figure().clear()
+
     def generatePairOfIDNeighbors(self):
         return random.randint(0, self.lenData - 1), random.randint(0, self.lenData - 1)
 
     def generateDisturbanceQuantity(self):
         return random.randint(1, 5)
 
-    def coolingFormula_0(self):
-        pass
-
     def coolingFormula_1(self):
+        self.current_formula = "Formula_1"
         self.Ti = self.T0 * pow((self.Tn/self.T0), self.I/self.N)
 
     def coolingFormula_2(self):
-        pass
+        A = ((self.T0 - self.Tn) * (self.N + 1)) / self.N
+        B = self.T0 - A
+        self.Ti = (A/(self.I+1)) + B
+        self.current_formula = "Formula_2"
+
+    def coolingFormula_7(self):
+        self.current_formula = "Formula_7"
+        self.Ti = ((self.T0 - self.Tn) / math.cosh((10*self.I)/self.N)) + self.Tn
+
+    def coolingFormula_8(self):
+        self.current_formula = "Formula_8"
+        A = (1/self.N) * ln(self.T0/self.Tn)
+        self.Ti = self.T0 * pow(math.e, (-A * self.I))
+
+    def takeScreeshot(self):
+        pygame.image.save(self.screen,"FIG_"+str(round(self.best_cost))+"_"+self.current_formula+"_"+str(self.N)+"_"+str(self.T0)+'.jpg')
+
+    def routineIterationSimulatedAnnealing(self):
+        self.coolingFormula_1()
+        self.temperature_graphic_array.append(self.Ti)
+        self.I += 1
+        self.iteration_graphic_array.append(self.I)
+        self.best_cost_graphic_array.append(self.best_cost)
+        self.routineUpdateScreen()
 
     def simulatedAnnealing(self):
         self.solution_s = self.best_solution.copy()
@@ -199,10 +253,8 @@ class TSPSA:
                     x = random.random() # Aleatório entre 0 e 1
                     if x < pow(math.e, - delta/self.Ti):
                         self.solution_s = self.solution_s_line.copy()
-            print(self.best_cost)
-            self.coolingFormula_1()
-            self.I += 1
-            self.routineUpdateScreen()
+                # print(self.best_cost)
+                self.routineIterationSimulatedAnnealing()
     
 
 def main():
@@ -210,7 +262,7 @@ def main():
         # print("Error! Missing params (base)")
         exit()
 
-    parameters = [10000,5,1000] if sys.argv[1] == 'base51' else [5000,5,10] # parameters = [QTD_ITERAÇÕES, EQUILIBRIO TERMICO, TEMPERATURA_INICIAL]
+    parameters = [100000,5,50] if sys.argv[1] == 'base51' else [100000,5,100] # parameters = [QTD_ITERAÇÕES, EQUILIBRIO TERMICO, TEMPERATURA_INICIAL]
     resolution = [1024, 1024] if sys.argv[1] == 'base51' else [1500, 1024]
 
     pygame.init()
@@ -231,9 +283,10 @@ def main():
     objtsp.drawFixedPoints()
     objtsp.drawSolutionLines()
     objtsp.simulatedAnnealing()
-
-    # while True:
-    #     pass
-    #     # print('a')
+    objtsp.routineUpdateScreen()
+    objtsp.takeScreeshot()
+    objtsp.plotGraphicTempByItr()
+    objtsp.plotGraphicCostByItr()
+    objtsp.plotGraphicCostByTemp()
 
 main()
