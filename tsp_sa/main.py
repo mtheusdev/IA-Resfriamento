@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 import math
 import random
@@ -17,6 +18,7 @@ class TSPSA:
         self.euclidian_matrix = []
         self.best_solution = []
         self.solution_s = []
+        self.current_cost = 0
         self.solution_s_line = []
         self.solution_cords = []
         self.best_cost_graphic_array = []
@@ -231,8 +233,8 @@ class TSPSA:
         self.temperature_graphic_array.append(self.Ti)
         self.I += 1
         self.iteration_graphic_array.append(self.I)
-        self.best_cost_graphic_array.append(self.best_cost)
-        self.routineUpdateScreen()
+        self.best_cost_graphic_array.append(self.current_cost)
+        # self.routineUpdateScreen()
 
     def simulatedAnnealing(self):
         self.solution_s = self.best_solution.copy()
@@ -249,10 +251,12 @@ class TSPSA:
                         # print("Mudei a tela")
                         self.best_solution = self.solution_s_line.copy()
                         self.best_cost = new_cost
+                        self.current_cost = new_cost
                 else: # Custo é maior, estocasticidade
                     x = random.random() # Aleatório entre 0 e 1
                     if x < pow(math.e, - delta/self.Ti):
                         self.solution_s = self.solution_s_line.copy()
+                        self.current_cost = self.calculateCost(self.solution_s)
                 # print(self.best_cost)
                 self.routineIterationSimulatedAnnealing()
     
@@ -287,6 +291,6 @@ def main():
     objtsp.takeScreeshot()
     objtsp.plotGraphicTempByItr()
     objtsp.plotGraphicCostByItr()
-    objtsp.plotGraphicCostByTemp()
+    # objtsp.plotGraphicCostByTemp()
 
 main()
